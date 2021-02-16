@@ -1,36 +1,50 @@
-# This is a basic workflow to help you get started with Actions
+name: Vulnerability
 
-name: CI
+on: [push, pull_request]
 
-# Controls when the action will run. 
-on:
-  # Triggers the workflow on push or pull request events but only for the master branch
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+env:
+  BUNDLE_CLEAN: 'true'
+  BUNDLE_PATH: 'vendor/bundle'
+  BUNDLER_VERSION: '1.17.3'
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  vulnerability:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.6.5
+      - name: Cache gems
+        uses: actions/cache@v2
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gem-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: ${{ runner.os }}-gem-
+      - name: bundle install
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          gem install bundler -v $BUNDLER_VERSION
+          bundle install --jobs 4 --retry 3
+      - name: setup db
+        run: bundle exec rails db:setup
+      # - name: Vulnerability test 1-a
+      #   run: bundle exec rails training SPEC=spec/vulnerabilities/sql_injection_spec.rb
+      # - name: Vulnerability test 1-b
+      #   run: bundle exec rails training SPEC=spec/vulnerabilities/command_injection_spec.rb
+      # - name: Vulnerability test 2
+      #   run: bundle exec rails training SPEC=spec/vulnerabilities/broken_auth_spec.rb
+      # - name: Vulnerability test 3
+      #   run: bundle exec rails training SPEC=spec/vulnerabilities/xss_spec.rb
+      # - name: Vulnerability test 4
+      #   run: bundle exec rails training SPEC=spec/vulnerabilities/insecure_dor_spec.rb
+      # - name: Vulnerability test 6-a
+      #   run: bundle exec rails training SPEC=spec/vulnerabilities/password_hashing_spec.rb
+      # - name: Vulnerability test 6-b
+      #   run: bundle exec rails training SPEC=spec/vulnerabilities/sensitive_data_exposure.rb
+      # - name: Vulnerability test 7
+      #   run: bundle exec rails training SPEC=spec/vulnerabilities/url_access_spec.rb
+      # - name: Vulnerability test 8
+      #   run: bundle exec rails training SPEC=spec/vulnerabilities/csrf_spec.rb
+      # - name: Vulnerability test 10
+      #   run: bundle exec rails training SPEC=spec/vulnerabilities/unvalidated_redirects_spec.rb
